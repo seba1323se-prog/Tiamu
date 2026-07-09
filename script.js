@@ -1,0 +1,292 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const raccoonImg = document.getElementById('raccoon-img');
+    const questionText = document.getElementById('question');
+    const btnSi = document.getElementById('btn-si');
+    const btnNo = document.getElementById('btn-no');
+    const buttonsContainer = document.getElementById('buttons-container');
+    const celebrationText = document.getElementById('celebration-text');
+    const loveCard = document.getElementById('love-card');
+    const canvas = document.getElementById('celebration-canvas');
+    const ctx = canvas.getContext('2d');
+    const heartsBg = document.getElementById('hearts-bg');
+
+    // State Variables
+    let clickCount = 0;
+    let siScale = 1.0;
+    let noScale = 1.0;
+    let isCelebrating = false;
+    let particles = [];
+    let slideshowInterval = null;
+
+    // Background floating hearts
+    function createBackgroundHeart() {
+        if (isCelebrating) return; // Stop background spawn during heavy celebration
+        
+        const heart = document.createElement('div');
+        heart.classList.add('bg-heart');
+        heart.innerHTML = '❤️';
+        
+        // Random horizontal position, size, and duration
+        const startX = Math.random() * window.innerWidth;
+        const size = Math.random() * 15 + 10; // 10px to 25px
+        const duration = Math.random() * 4 + 4; // 4s to 8s
+        
+        heart.style.left = `${startX}px`;
+        heart.style.fontSize = `${size}px`;
+        heart.style.animationDuration = `${duration}s`;
+        
+        // Soft opacity variation
+        heart.style.opacity = (Math.random() * 0.4 + 0.1).toFixed(2);
+        
+        heartsBg.appendChild(heart);
+        
+        // Remove after animation finishes
+        setTimeout(() => {
+            heart.remove();
+        }, duration * 1000);
+    }
+
+    // Spawn initial background hearts
+    for (let i = 0; i < 15; i++) {
+        setTimeout(() => {
+            createBackgroundHeart();
+        }, Math.random() * 4000);
+    }
+    // Continue spawning background hearts
+    setInterval(createBackgroundHeart, 800);
+
+
+    // Handle clicking "No"
+    btnNo.addEventListener('click', () => {
+        let currentImage = 'images/sorpresa.png';
+        let currentText = '';
+
+        // Flow of images and texts based on clickCount
+        if (clickCount === 0) {
+            currentImage = 'images/sorpresa.png';
+            currentText = '¿Seguro? 🥺';
+        } else if (clickCount === 1) {
+            currentImage = 'images/cintillo.png';
+            currentText = 'Mira lo tierno que me puse para ti... 🥺🌸';
+        } else if (clickCount === 2) {
+            currentImage = 'images/pizza.png';
+            currentText = 'Te compré pisa¿ 🍕 ¿Ahora sí?';
+        } else if (clickCount === 3) {
+            currentImage = 'images/sorpresa.png';
+            currentText = '¡No seas malito con tu amorsito! 😭';
+        } else if (clickCount === 4) {
+            currentImage = 'images/pistola.png';
+            currentText = 'A ver, ¡última advertencia, Simon! 🔫🦝';
+        } else if (clickCount === 5) {
+            currentImage = 'images/pistola.png';
+            currentText = '¡Te dije que sí! 🔫😤';
+        } else if (clickCount === 6) {
+            currentImage = 'images/pistola.png';
+            currentText = '¡O dices que sí o disparo amor! 🔫💥';
+        } else {
+            currentImage = 'images/pistola.png';
+            currentText = '¡No me dejas otra opción! ¡Haz clic en SÍ! 🔫😈';
+        }
+
+        // Apply changes
+        raccoonImg.style.opacity = '0';
+        setTimeout(() => {
+            raccoonImg.src = currentImage;
+            raccoonImg.style.opacity = '1';
+        }, 150);
+
+        questionText.textContent = currentText;
+
+        // Grow "Sí" button and shrink "No" button
+        siScale += 0.35;
+        noScale -= 0.12;
+        if (noScale < 0.2) noScale = 0.2; // don't let it disappear completely
+
+        // Apply scale transforms
+        btnSi.style.transform = `scale(${siScale})`;
+        btnNo.style.transform = `scale(${noScale})`;
+
+        // Shake the card slightly for feedback
+        loveCard.style.transform = 'scale(0.97) rotate(-1deg)';
+        setTimeout(() => {
+            loveCard.style.transform = 'scale(1) rotate(0deg)';
+        }, 150);
+
+        clickCount++;
+    });
+
+    // Handle clicking "Sí"
+    btnSi.addEventListener('click', () => {
+        if (isCelebrating) return;
+        
+        isCelebrating = true;
+
+        // Stop button interactions and hide them
+        buttonsContainer.classList.add('hidden');
+        
+        // Show celebration love letter text
+        celebrationText.classList.remove('hidden');
+        
+        // Change title and subtitle
+        const title = document.querySelector('.title');
+        title.textContent = '¡SÍ ME AMA! 🎉💖';
+        questionText.innerHTML = '¡SABÍA QUE SÍ! ¡TE AMO MUCHÍSIMO! 😭💍❤️';
+        
+        // Animate love card
+        loveCard.classList.add('celebrating');
+
+        // Happy images to cycle in the slideshow
+        const happyImages = [
+            'images/si.png',          // Proposal crying raccoon
+            'images/adoracion.png',    // Praise/Glory raccoons
+            'images/inicio.png',       // Hugging raccoon/cat
+            'images/cintillo.png'      // Cute headband raccoon
+        ];
+        
+        let slideshowIndex = 0;
+        // Set initial celebration image
+        raccoonImg.src = happyImages[slideshowIndex];
+
+        // Start slideshow cycling through happy photos
+        slideshowInterval = setInterval(() => {
+            slideshowIndex = (slideshowIndex + 1) % happyImages.length;
+            raccoonImg.style.opacity = '0';
+            setTimeout(() => {
+                raccoonImg.src = happyImages[slideshowIndex];
+                raccoonImg.style.opacity = '1';
+            }, 200);
+        }, 2200);
+
+        // Initialize particles
+        initCanvas();
+        startCelebration();
+    });
+
+    // Particle class for Canvas Celebration
+    class Particle {
+        constructor() {
+            this.x = Math.random() * canvas.width;
+            this.y = canvas.height + Math.random() * 100; // start below screen
+            this.size = Math.random() * 16 + 10;
+            this.speedY = -(Math.random() * 8 + 5); // go up
+            this.speedX = Math.random() * 6 - 3; // wobble
+            
+            // Rich color palette (confetti of colors)
+            const colors = [
+                '#ff4d6d', '#ff758f', '#ff8fa3', '#ffb3c6', // Pink shades
+                '#ff0a54', '#ff5c8a', '#ff85a1', '#ffccd5', // Hot pinks
+                '#ffd166', '#ffb703', '#fb8500',           // Golds & Orange
+                '#06d6a0', '#118ab2', '#073b4c',           // Teals & Blues
+                '#7209b7', '#f72585', '#4cc9f0',           // Purples & Cyans
+                '#ff007f', '#d90429', '#3a86c8'            // Bold colors
+            ];
+            this.color = colors[Math.floor(Math.random() * colors.length)];
+            
+            // Types: 'heart', 'circle', 'rectangle'
+            const types = ['heart', 'circle', 'rectangle', 'rectangle'];
+            this.type = types[Math.floor(Math.random() * types.length)];
+            
+            this.rotation = Math.random() * Math.PI * 2;
+            this.rotationSpeed = Math.random() * 0.1 - 0.05;
+            this.opacity = Math.random() * 0.4 + 0.6; // 0.6 to 1.0
+        }
+
+        update() {
+            this.y += this.speedY;
+            this.x += this.speedX;
+            
+            // Apply gravity/drag
+            this.speedY += 0.09; 
+            
+            // Wobble
+            this.speedX += Math.sin(this.y * 0.04) * 0.1;
+            
+            this.rotation += this.rotationSpeed;
+            
+            // Fade out as they fall low
+            if (this.speedY > 0 && this.y > canvas.height * 0.65) {
+                this.opacity -= 0.015;
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, this.opacity);
+            ctx.fillStyle = this.color;
+            
+            if (this.type === 'heart') {
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size / 2);
+                ctx.bezierCurveTo(-this.size / 2, -this.size, -this.size, -this.size / 3, -this.size, 0);
+                ctx.bezierCurveTo(-this.size, this.size / 3, -this.size / 3, this.size * 2/3, 0, this.size);
+                ctx.bezierCurveTo(this.size / 3, this.size * 2/3, this.size, this.size / 3, this.size, 0);
+                ctx.bezierCurveTo(this.size, -this.size / 3, this.size / 2, -this.size, 0, -this.size / 2);
+                ctx.closePath();
+                ctx.fill();
+            } else if (this.type === 'circle') {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.fillRect(-this.size / 2, -this.size / 4, this.size, this.size / 2);
+            }
+            
+            ctx.restore();
+        }
+    }
+
+    // Initialize/Resize Canvas
+    function initCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', () => {
+        if (isCelebrating) {
+            initCanvas();
+        }
+    });
+
+    // Celebration Loop
+    function startCelebration() {
+        // Spawn initial burst of particles
+        for (let i = 0; i < 200; i++) {
+            particles.push(new Particle());
+        }
+
+        // Periodically spawn new ones from bottom
+        const spawnInterval = setInterval(() => {
+            if (!isCelebrating) {
+                clearInterval(spawnInterval);
+                return;
+            }
+            for (let i = 0; i < 8; i++) {
+                particles.push(new Particle());
+            }
+        }, 80);
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw();
+                
+                // Remove out of bounds or invisible particles
+                if (p.y > canvas.height + 50 || p.opacity <= 0 || p.x < -50 || p.x > canvas.width + 50) {
+                    particles.splice(i, 1);
+                }
+            }
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+    }
+});
