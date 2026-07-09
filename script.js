@@ -19,6 +19,21 @@ document.addEventListener('DOMContentLoaded', () => {
     let particles = [];
     let slideshowInterval = null;
 
+    // Preload all images to prevent lag/blank frames
+    const imagesToPreload = [
+        'images/inicio.png',
+        'images/sorpresa.png',
+        'images/cintillo.png',
+        'images/pizza.png',
+        'images/pistola.png',
+        'images/si.png',
+        'images/adoracion.png'
+    ];
+    imagesToPreload.forEach(src => {
+        const img = new Image();
+        img.src = src;
+    });
+
     // Background floating hearts
     function createBackgroundHeart() {
         if (isCelebrating) return; // Stop background spawn during heavy celebration
@@ -73,15 +88,13 @@ document.addEventListener('DOMContentLoaded', () => {
             currentImage = 'images/pizza.png';
             currentText = 'Te compré pisa¿ 🍕 ¿Ahora sí?';
         } else if (clickCount === 3) {
-            currentImage = 'images/sorpresa.png';
-            currentText = '¡No seas malito con tu amorsito! 😭';
-        } else if (clickCount === 4) {
+            // SHOW THE GUN RACCOON ON THE 4TH CLICK!
             currentImage = 'images/pistola.png';
             currentText = 'A ver, ¡última advertencia, Simon! 🔫🦝';
-        } else if (clickCount === 5) {
+        } else if (clickCount === 4) {
             currentImage = 'images/pistola.png';
             currentText = '¡Te dije que sí! 🔫😤';
-        } else if (clickCount === 6) {
+        } else if (clickCount === 5) {
             currentImage = 'images/pistola.png';
             currentText = '¡O dices que sí o disparo amor! 🔫💥';
         } else {
@@ -89,19 +102,19 @@ document.addEventListener('DOMContentLoaded', () => {
             currentText = '¡No me dejas otra opción! ¡Haz clic en SÍ! 🔫😈';
         }
 
-        // Apply changes
+        // Apply image changes with opacity transition
         raccoonImg.style.opacity = '0';
         setTimeout(() => {
             raccoonImg.src = currentImage;
             raccoonImg.style.opacity = '1';
-        }, 150);
+        }, 120);
 
         questionText.textContent = currentText;
 
         // Grow "Sí" button and shrink "No" button
-        siScale += 0.35;
-        noScale -= 0.12;
-        if (noScale < 0.2) noScale = 0.2; // don't let it disappear completely
+        siScale += 0.22; // Grows by 22% each time to allow more clicks before covering screen
+        noScale -= 0.12; // Shrinks by 12% each time
+        if (noScale < 0.15) noScale = 0.15; // don't let it disappear completely
 
         // Apply scale transforms
         btnSi.style.transform = `scale(${siScale})`;
