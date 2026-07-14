@@ -71,11 +71,35 @@ document.addEventListener('DOMContentLoaded', () => {
     // Continue spawning background hearts
     setInterval(createBackgroundHeart, 800);
 
+    // Spawn a physical broken heart flying out from click location
+    function spawnBrokenHeart(x, y) {
+        const heart = document.createElement('div');
+        heart.classList.add('broken-heart-particle');
+        heart.innerHTML = '💔';
+        
+        // Position at click coordinate
+        heart.style.left = `${x}px`;
+        heart.style.top = `${y}px`;
+        
+        // Random horizontal drift direction and speed
+        const driftX = Math.random() * 120 - 60; // -60px to 60px
+        heart.style.setProperty('--drift', `${driftX}px`);
+        
+        document.body.appendChild(heart);
+        
+        // Remove element after animation completes (1.2s in CSS)
+        setTimeout(() => {
+            heart.remove();
+        }, 1200);
+    }
 
     // Handle clicking "No"
-    btnNo.addEventListener('click', () => {
+    btnNo.addEventListener('click', (e) => {
         let currentImage = 'images/sorpresa.png';
         let currentText = '';
+
+        // Spawn broken heart at cursor click coordinates
+        spawnBrokenHeart(e.clientX, e.clientY);
 
         // Flow of images and texts based on clickCount
         if (clickCount === 0) {
@@ -88,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             currentImage = 'images/pizza.png';
             currentText = 'Te compré pisa¿ 🍕 ¿Ahora sí?';
         } else if (clickCount === 3) {
-            // SHOW THE GUN RACCOON ON THE 4TH CLICK!
             currentImage = 'images/pistola.png';
             currentText = 'A ver, ¡última advertencia, Simon! 🔫🦝';
         } else if (clickCount === 4) {
@@ -107,7 +130,13 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => {
             raccoonImg.src = currentImage;
             raccoonImg.style.opacity = '1';
-        }, 120);
+        }, 100);
+
+        // Trigger squash-and-stretch animation on the raccoon image
+        raccoonImg.classList.add('pop');
+        setTimeout(() => {
+            raccoonImg.classList.remove('pop');
+        }, 450);
 
         questionText.textContent = currentText;
 
@@ -118,7 +147,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Apply scale transforms
         btnSi.style.transform = `scale(${siScale})`;
+        
+        // Trigger wobbly escape animation on "No" button
+        btnNo.style.setProperty('--no-btn-scale', noScale);
         btnNo.style.transform = `scale(${noScale})`;
+        btnNo.classList.add('wobble');
+        setTimeout(() => {
+            btnNo.classList.remove('wobble');
+        }, 400);
 
         // Shake the card slightly for feedback
         loveCard.style.transform = 'scale(0.97) rotate(-1deg)';
@@ -196,9 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
             this.color = colors[Math.floor(Math.random() * colors.length)];
             
-            // Types: 'heart', 'circle', 'rectangle'
-            const types = ['heart', 'circle', 'rectangle', 'rectangle'];
+            // Types: 'heart', 'circle', 'rectangle', 'emoji'
+            const types = ['heart', 'circle', 'rectangle', 'rectangle', 'emoji'];
             this.type = types[Math.floor(Math.random() * types.length)];
+            
+            // Choose an emoji if this particle is a bubble emoji
+            const emojis = ['💖', '💍', '🦝', '✨', '😻', '💋', '❤️'];
+            this.emoji = emojis[Math.floor(Math.random() * emojis.length)];
             
             this.rotation = Math.random() * Math.PI * 2;
             this.rotationSpeed = Math.random() * 0.1 - 0.05;
@@ -209,11 +249,14 @@ document.addEventListener('DOMContentLoaded', () => {
             this.y += this.speedY;
             this.x += this.speedX;
             
-            // Apply gravity/drag
-            this.speedY += 0.09; 
-            
-            // Wobble
-            this.speedX += Math.sin(this.y * 0.04) * 0.1;
+            // Apply gravity/drag (emojis rise lighter, like balloons)
+            if (this.type === 'emoji') {
+                this.speedY += 0.02; // slow rising deceleration
+                this.speedX += Math.sin(this.y * 0.02) * 0.05;
+            } else {
+                this.speedY += 0.09; 
+                this.speedX += Math.sin(this.y * 0.04) * 0.1;
+            }
             
             this.rotation += this.rotationSpeed;
             
@@ -243,6 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fill();
+            } else if (this.type === 'emoji') {
+                ctx.font = `${this.size * 1.5}px Arial`;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation * 0.3); // rotate slower
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.emoji, 0, 0);
             } else {
                 ctx.translate(this.x, this.y);
                 ctx.rotate(this.rotation);
@@ -268,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Celebration Loop
     function startCelebration() {
         // Spawn initial burst of particles
-        for (let i = 0; i < 200; i++) {
+        for (let i = 0; i < 220; i++) {
             particles.push(new Particle());
         }
 
